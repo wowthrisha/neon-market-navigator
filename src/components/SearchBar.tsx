@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { findProductById, findProductsByName, products } from '@/utils/storeData';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface SearchBarProps {
   onProductSelect: (productId: string) => void;
@@ -15,12 +14,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearch(value);
     
-    // Check if it looks like a product ID format
     const isIdPattern = /^P\d+$/i.test(value);
     setIsIdSearch(isIdPattern);
     
@@ -40,7 +37,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     }
   };
   
-  // Handle search submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -58,7 +54,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
         toast(`Product ID ${search} not found`);
       }
     } else if (searchResults.length > 0) {
-      // Use the first result if there are any
       onProductSelect(searchResults[0].id);
       setShowResults(false);
     } else {
@@ -66,7 +61,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     }
   };
   
-  // Handle result item click
   const handleResultClick = (productId: string) => {
     onProductSelect(productId);
     setSearch('');
@@ -74,7 +68,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     setShowResults(false);
   };
   
-  // Handle clicking outside of search results
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -88,7 +81,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     };
   }, []);
   
-  // Clear search field
   const clearSearch = () => {
     setSearch('');
     setSearchResults([]);
@@ -134,7 +126,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
         </button>
       </form>
       
-      {/* Search results dropdown */}
       {showResults && searchResults.length > 0 && (
         <div className="absolute z-20 mt-2 w-full glass-morphism rounded-md shadow-md neon-border-cyan animate-fade-in overflow-hidden">
           <ul className="py-1 max-h-60 overflow-y-auto scrollbar-none">
@@ -152,7 +143,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
         </div>
       )}
       
-      {/* Quick links */}
       <div className="flex flex-wrap justify-center gap-2 mt-3">
         <p className="text-white/70 text-sm">Examples:</p>
         <button 

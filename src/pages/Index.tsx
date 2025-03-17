@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import SearchBar from '@/components/SearchBar';
@@ -6,7 +5,7 @@ import StoreMap from '@/components/StoreMap';
 import ProductLocation from '@/components/ProductLocation';
 import ProductCard from '@/components/ProductCard';
 import { findProductById, products } from '@/utils/storeData';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
