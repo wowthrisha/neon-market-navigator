@@ -22,7 +22,7 @@ const Index = () => {
       setSelectedProduct(product);
       toast({
         title: `Located ${product.name}`,
-        description: `In Aisle ${product.location.aisle}`
+        description: `In Aisle ${product.location.aisle}, Section ${product.location.section}, Shelf ${product.location.shelf}`
       });
       
       // Add to recently viewed, avoid duplicates, max 3 items
@@ -33,7 +33,7 @@ const Index = () => {
     }
   };
 
-  // Simulate a random user movement every 20 seconds
+  // Simulate a random user movement every 15 seconds (reduced from 20 for more frequent updates)
   useEffect(() => {
     const interval = setInterval(() => {
       // Small random movement to simulate user walking around
@@ -41,7 +41,7 @@ const Index = () => {
         x: Math.max(50, Math.min(950, prev.x + (Math.random() - 0.5) * 60)),
         y: Math.max(50, Math.min(550, prev.y + (Math.random() - 0.5) * 60))
       }));
-    }, 20000);
+    }, 15000);
     
     return () => clearInterval(interval);
   }, []);
