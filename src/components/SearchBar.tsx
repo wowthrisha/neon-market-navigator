@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { findProductById, findProductsByName, products } from '@/utils/storeData';
@@ -9,8 +10,8 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [isIdSearch, setIsIdSearch] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ id: string; name: string }[]>([]);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   
@@ -21,15 +22,18 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     const isIdPattern = /^P\d+$/i.test(value);
     setIsIdSearch(isIdPattern);
     
-    if (value.length > 1) {
-      let results;
+    if (value.length > 2) {
       if (isIdPattern) {
         const product = findProductById(value);
-        results = product ? [{ id: product.id, name: product.name }] : [];
+        if (product) {
+          setSearchResults([product]);
+        } else {
+          setSearchResults([]);
+        }
       } else {
-        results = findProductsByName(value).map(p => ({ id: p.id, name: p.name }));
+        const results = findProductsByName(value);
+        setSearchResults(results);
       }
-      setSearchResults(results);
       setShowResults(true);
     } else {
       setSearchResults([]);
@@ -40,8 +44,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (search.trim() === '') {
-      toast("Please enter a product ID or name");
+    if (!search.trim()) {
+      toast({
+        title: "Please enter a product ID or name",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -51,13 +58,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
         onProductSelect(product.id);
         setShowResults(false);
       } else {
-        toast(`Product ID ${search} not found`);
+        toast({
+          title: `Product ID ${search} not found`,
+          variant: "destructive",
+        });
       }
     } else if (searchResults.length > 0) {
       onProductSelect(searchResults[0].id);
       setShowResults(false);
     } else {
-      toast("No products match your search");
+      toast({
+        title: "No products match your search",
+        variant: "destructive",
+      });
     }
   };
   
@@ -88,55 +101,47 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
   };
   
   return (
-    <div 
-      ref={searchRef}
-      className="w-full max-w-2xl mx-auto mb-8 relative animate-fade-in" 
-      style={{ animationDelay: '0.2s' }}
-    >
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="relative">
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70">
-            <Search className="h-5 w-5" />
-          </div>
-          
-          <input 
-            type="text"
-            value={search}
-            onChange={handleSearchChange}
-            placeholder="Enter product ID or name..."
-            className="w-full py-3 pl-10 pr-10 rounded-md glass-morphism text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-neon-cyan transition-all duration-300 neon-border-cyan"
-          />
-          
-          {search && (
-            <button 
-              type="button" 
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors duration-200"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
-        </div>
+    <div ref={searchRef} className="mb-6 relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <form onSubmit={handleSubmit} className="relative flex items-stretch">
+        <input
+          type="text"
+          value={search}
+          onChange={handleSearchChange}
+          placeholder="Search products by ID or name..."
+          className="w-full h-12 glass-morphism text-white px-4 py-2 rounded-l-md focus:outline-none focus:neon-border-cyan"
+        />
+        
+        {search && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="absolute right-16 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
         
         <button 
           type="submit"
-          className="absolute right-14 top-1/2 transform -translate-y-1/2 bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan px-4 py-1 rounded text-sm transition-all duration-300 neon-glow-cyan"
+          className="flex items-center justify-center px-4 bg-neon-yellow text-black font-medium rounded-r-md hover:bg-opacity-90 transition-all duration-200"
         >
-          Find
+          <Search className="h-5 w-5 mr-1" />
+          <span className="hidden sm:inline">Search</span>
         </button>
       </form>
       
       {showResults && searchResults.length > 0 && (
         <div className="absolute z-20 mt-2 w-full glass-morphism rounded-md shadow-md neon-border-cyan animate-fade-in overflow-hidden">
           <ul className="py-1 max-h-60 overflow-y-auto scrollbar-none">
-            {searchResults.map((result) => (
-              <li 
-                key={result.id}
-                className="px-4 py-2 hover:bg-white/10 cursor-pointer transition-all duration-200"
-                onClick={() => handleResultClick(result.id)}
-              >
-                <span className="text-neon-yellow font-mono mr-2">{result.id}</span>
-                <span className="text-white">{result.name}</span>
+            {searchResults.map((product) => (
+              <li key={product.id}>
+                <button 
+                  className="w-full text-left px-4 py-2 text-white hover:bg-white/10 transition-colors flex justify-between items-center"
+                  onClick={() => handleResultClick(product.id)}
+                >
+                  <span>{product.name}</span>
+                  <span className="text-neon-yellow text-xs">Aisle {product.location.aisle}</span>
+                </button>
               </li>
             ))}
           </ul>
@@ -146,22 +151,40 @@ const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
       <div className="flex flex-wrap justify-center gap-2 mt-3">
         <p className="text-white/70 text-sm">Examples:</p>
         <button 
-          onClick={() => handleResultClick('P001')}
-          className="text-neon-cyan hover:text-white text-sm transition-colors duration-200"
+          type="button" 
+          className="text-neon-yellow text-sm hover:text-white transition-colors"
+          onClick={() => {
+            setSearch("P105");
+            handleResultClick("P105");
+          }}
         >
-          P001
+          P105
         </button>
         <button 
-          onClick={() => handleResultClick('P005')}
-          className="text-neon-pink hover:text-white text-sm transition-colors duration-200"
+          type="button" 
+          className="text-neon-yellow text-sm hover:text-white transition-colors"
+          onClick={() => {
+            setSearch("Milk");
+            const results = findProductsByName("Milk");
+            if (results.length > 0) {
+              handleResultClick(results[0].id);
+            }
+          }}
         >
-          P005
+          Milk
         </button>
         <button 
-          onClick={() => handleResultClick('P007')}
-          className="text-neon-yellow hover:text-white text-sm transition-colors duration-200"
+          type="button" 
+          className="text-neon-yellow text-sm hover:text-white transition-colors"
+          onClick={() => {
+            setSearch("Apple");
+            const results = findProductsByName("Apple");
+            if (results.length > 0) {
+              handleResultClick(results[0].id);
+            }
+          }}
         >
-          P007
+          Apple
         </button>
       </div>
     </div>

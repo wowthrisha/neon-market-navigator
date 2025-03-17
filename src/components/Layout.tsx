@@ -23,11 +23,11 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
       {/* Header with subtle glow */}
       <header className="w-full glass-morphism z-10 py-4 px-6 mb-6 animate-fade-in">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl md:text-3xl font-bold neon-text-cyan">
-            NEON<span className="neon-text-pink">MART</span>
+          <h1 className="text-2xl md:text-3xl font-bold neon-text-yellow">
+            KART<span className="neon-text-pink">IFY</span>
           </h1>
           <p className="text-sm md:text-base text-white/80">
-            Product Location Navigator
+            Smart Shopping Navigator
           </p>
         </div>
       </header>

@@ -4,9 +4,10 @@ import { storeSections, StoreSection, findPathToProduct, Product } from '@/utils
 
 interface StoreMapProps {
   selectedProduct: Product | null;
+  userLocation: { x: number, y: number };
 }
 
-const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
+const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct, userLocation }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scale, setScale] = useState(1);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -35,8 +36,11 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
       const sectionId = `section-${selectedProduct.category.toLowerCase().replace(/\s+&\s+|\s+/g, '-')}`;
       setHighlight(sectionId);
       
-      // Calculate path to product
-      const newPath = findPathToProduct(selectedProduct);
+      // Calculate path to product with user's current location as starting point
+      let newPath = [
+        { x: userLocation.x, y: userLocation.y }, 
+        ...findPathToProduct(selectedProduct)
+      ];
       setPath(newPath);
       
       // Reset animation counter
@@ -45,7 +49,7 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
       setHighlight(null);
       setPath([]);
     }
-  }, [selectedProduct]);
+  }, [selectedProduct, userLocation]);
   
   // Animation loop for pulsing effects
   useEffect(() => {
@@ -153,11 +157,11 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
     
     // Draw path to product
     if (path.length > 0 && highlight) {
-      ctx.strokeStyle = '#ff36f7';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#f6fa70'; // Neon yellow path
+      ctx.lineWidth = 4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.setLineDash([5, 5]);
+      ctx.setLineDash([10, 10]);
       
       const pathProgress = Math.min(1, animationFrame / 30); // Animation takes 30 frames
       
@@ -165,22 +169,46 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
       ctx.moveTo(path[0].x, path[0].y);
       
       // Animate the path drawing
-      if (path.length === 2) {
-        const endX = path[0].x + (path[1].x - path[0].x) * pathProgress;
-        const endY = path[0].y + (path[1].y - path[0].y) * pathProgress;
-        ctx.lineTo(endX, endY);
-      } else {
-        for (let i = 1; i < path.length; i++) {
-          ctx.lineTo(path[i].x, path[i].y);
+      for (let i = 1; i < path.length; i++) {
+        const segment = {
+          startX: path[i-1].x,
+          startY: path[i-1].y,
+          endX: path[i].x,
+          endY: path[i].y
+        };
+        
+        // Calculate current point on this segment
+        if (i === 1) {
+          const segmentLength = Math.sqrt(
+            Math.pow(segment.endX - segment.startX, 2) + 
+            Math.pow(segment.endY - segment.startY, 2)
+          );
+          
+          const progress = pathProgress * segmentLength;
+          const angle = Math.atan2(segment.endY - segment.startY, segment.endX - segment.startX);
+          
+          const currentX = segment.startX + Math.cos(angle) * progress;
+          const currentY = segment.startY + Math.sin(angle) * progress;
+          
+          ctx.lineTo(currentX, currentY);
+        } else {
+          ctx.lineTo(segment.endX, segment.endY);
         }
       }
       ctx.stroke();
+      
+      // Add a subtle glow effect to the path
+      ctx.strokeStyle = 'rgba(246, 250, 112, 0.3)';
+      ctx.lineWidth = 8;
+      ctx.setLineDash([10, 10]);
+      ctx.stroke();
+      
       ctx.setLineDash([]);
       
       // Draw pulsing circle at destination
       if (pathProgress === 1) {
         const pulseSize = Math.sin(animationFrame * 0.2) * 5 + 10; // Value between 5 and 15
-        ctx.fillStyle = '#ff36f7';
+        ctx.fillStyle = '#f6fa70'; // Neon yellow
         ctx.globalAlpha = 0.7;
         ctx.beginPath();
         ctx.arc(path[path.length - 1].x, path[path.length - 1].y, pulseSize, 0, Math.PI * 2);
@@ -189,10 +217,39 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
       }
     }
     
+    // Draw user location as a pulsing dot
+    const pulseSize = Math.sin(animationFrame * 0.1) * 2 + 8; // Value between 6 and 10
+    
+    // Draw outer glow
+    const gradientUser = ctx.createRadialGradient(
+      userLocation.x, userLocation.y, 0,
+      userLocation.x, userLocation.y, pulseSize * 2
+    );
+    gradientUser.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+    gradientUser.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+    gradientUser.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = gradientUser;
+    ctx.beginPath();
+    ctx.arc(userLocation.x, userLocation.y, pulseSize * 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw user point
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(userLocation.x, userLocation.y, pulseSize * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add "You are here" label
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('You are here', userLocation.x, userLocation.y - 15);
+    
     // Reset the transformation
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     
-  }, [scale, highlight, animationFrame, path]);
+  }, [scale, highlight, animationFrame, path, userLocation]);
   
   return (
     <div className="w-full relative overflow-hidden rounded-lg neon-border-cyan animate-fade-in glass-morphism" style={{ animationDelay: '0.4s' }}>
@@ -220,6 +277,10 @@ const StoreMap: React.FC<StoreMapProps> = ({ selectedProduct }) => {
           <div className="flex items-center gap-2">
             <span className="block w-3 h-3 bg-neon-blue" />
             <span className="text-white">Dairy/Frozen</span>
+          </div>
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/20">
+            <span className="block w-3 h-3 rounded-full bg-white" />
+            <span className="text-white">Your Location</span>
           </div>
         </div>
       </div>
